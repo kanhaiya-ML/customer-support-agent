@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Agent</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#0f172a;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.container{
+    width:900px;
+    height:90vh;
+    background:#111827;
+    border-radius:16px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+.header{
+    padding:20px;
+    background:#1f2937;
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.chat-box{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.message{
+    max-width:70%;
+    padding:12px 16px;
+    border-radius:12px;
+    line-height:1.5;
+}
+
+.user{
+    background:#2563eb;
+    color:white;
+    align-self:flex-end;
+}
+
+.bot{
+    background:#374151;
+    color:white;
+    align-self:flex-start;
+}
+
+.feedback{
+    margin-top:10px;
+    display:flex;
+    gap:10px;
+}
+
+.feedback button{
+    border:none;
+    padding:8px 15px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.input-area{
+    display:flex;
+    gap:10px;
+    padding:20px;
+    background:#1f2937;
+}
+
+.input-area input{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    outline:none;
+    font-size:15px;
+}
+
+.input-area button{
+    padding:14px 25px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+    font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+```
+<div class="header">
+    Customer Support Agent
+</div>
+
+<div class="chat-box" id="chatBox"></div>
+
+<div class="input-area">
+    <input
+        type="text"
+        id="question"
+        placeholder="Ask your question..."
+    >
+    <button onclick="sendMessage()">
+        Send
+    </button>
+</div>
+```
+
+</div>
+
+<script>
+
+const chatBox = document.getElementById("chatBox");
+
+function addMessage(text,type){
+
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.classList.add(type);
+
+    div.innerText = text;
+
+    chatBox.appendChild(div);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+let currentQuery = "";
+let isEscalated = false;
+async function sendMessage(){
+
+    const input = document.getElementById("question");
+
+    const question = input.value.trim();
+
+    if(!question) return;
+
+    currentQuery = question;
+
+    addMessage(question,"user");
+
+    input.value = "";
+
+    const endpoint = isEscalated ? "/human-agent" : "/ask";
+
+    const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: question})
+    });
+
+    const data = await response.json();
+
+    addMessage(data.answer,"bot");
+
+    if (!isEscalated) showFeedbackButtons();
+}
+
+function showFeedbackButtons(){
+
+    const wrapper = document.createElement("div");
+
+    wrapper.classList.add("feedback");
+
+    wrapper.innerHTML = `
+        <button onclick="sendFeedback('yes')">
+            👍 Solved
+        </button>
+
+        <button onclick="sendFeedback('no')">
+            👎 Not Solved
+        </button>
+    `;
+
+    chatBox.appendChild(wrapper);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendFeedback(status){
+    if (status === "no") isEscalated = true;
+
+    const response = await fetch(
+        "http://127.0.0.1:8000/feedback",
+        {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                query: currentQuery,
+                solved: status
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    addMessage(data.answer,"bot");
+        if (status === "no") {
+        setTimeout(() => {
+            addMessage("Hi! I'm kanhaiya, a customer support specialist. Sorry for the inconvenience. Could you please describe your issue in detail?", "bot");
+        }, 1500);
+    }
+}
+
+</script>
+
+</body>
+</html>
