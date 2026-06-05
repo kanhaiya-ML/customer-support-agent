@@ -1,7 +1,6 @@
 langchain
 pydantic
 fastapi
-os
 dotenv
 duckduckgo_search
 typing
