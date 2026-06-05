@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from support_workflow import workflow
 from support_workflow import escalate_agent
+from langchain_core.messages import HumanMessage
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -19,6 +20,7 @@ app.add_middleware(
 
 class Request(BaseModel):
     question: str
+    thread_id: str
 
 class FeedbackRequest(BaseModel):
     query: str
@@ -26,13 +28,16 @@ class FeedbackRequest(BaseModel):
 
 @app.post("/ask")
 def ask(request: Request):
+    config = {"configurable":{"thread_id":request.thread_id}}
     output = workflow.invoke({
     "query": request.question,
     "result": "",
     "solved": "no",
     "next_agent": "",
-    "final_answer": ""
-})
+    "final_answer": "",
+    "messages": [HumanMessage(content=request.question)]
+
+},config=config)
     return {"answer": output['result']}
 
 
@@ -57,7 +62,7 @@ def human_agent(request: Request):
     Never reveal you are an AI.
     Only answer Related to actual customer support questions don't engage with unrelated questions.
     if you struggle to find answer just write i simple apology and say to we are looking into your problem and reach out shortly.
-    
+
     Customer issue: {request.question}"""
 
     response = llm.invoke(prompt)

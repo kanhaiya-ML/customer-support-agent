@@ -128,8 +128,9 @@ body{
         type="text"
         id="question"
         placeholder="Ask your question..."
+        onkeypress="if(event.key==='Enter') sendMessage()"
     >
-    <button onclick="sendMessage()">
+    <button onclick="sendMessage()" id="btn">
         Send
     </button>
 </div>
@@ -140,6 +141,7 @@ body{
 <script>
 
 const chatBox = document.getElementById("chatBox");
+const threadId = crypto.randomUUID();
 
 function addMessage(text,type){
 
@@ -175,7 +177,7 @@ async function sendMessage(){
     const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question: question})
+        body: JSON.stringify({question: question,thread_id:threadId})
     });
 
     const data = await response.json();

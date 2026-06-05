@@ -4,3 +4,6 @@ __pycache__/
 ChromaDB/
 *.ipynb_checkpoints/
 temp.pdf
+support_workflow.ipynb
+t5_customer_support_optimized/
+*.safetensors
