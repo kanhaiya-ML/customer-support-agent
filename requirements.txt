@@ -5,4 +5,4 @@ dotenv
 duckduckgo_search
 typing
 langgraph
-
+uvicorn
