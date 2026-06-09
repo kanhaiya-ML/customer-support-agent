@@ -6,7 +6,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from model import predict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
-from rag import retriver
+from rag import hybrid_search
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -40,8 +40,26 @@ def choose_agent(state: SupportState):
     return {"next_agent":response.content.strip().lower()}
 
 def rag_agent(state: SupportState):
-    docs = retriver.invoke(state["query"])
-    return {"result": "\n".join([d.page_content for d in docs])}
+    docs = hybrid_search.invoke(state["query"])
+
+    context = "\n".join(
+        [doc.page_content for doc in docs]
+    )
+    prompt = f"""
+    You are a customer support assistant.
+    Answer ONLY from the provided context.
+    Context:
+    {context}
+    Question:
+    {state['query']}
+    If the answer is not present in the context,
+    say "I couldn't find that information."
+    """
+    response = llm.invoke(prompt)
+    return {
+        "result": response.content
+    }
+
 
 def web_agent(state: SupportState):
     with DDGS() as ddgs:
